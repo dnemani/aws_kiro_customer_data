@@ -22,7 +22,7 @@ Implement a serverless customer management REST API on AWS using Python Lambda f
     - Return a dict mapping each failing field name to a human-readable reason string; return empty dict on success
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6_
 
-  - [ ]* 1.3 Write property tests for shared utilities
+  - [x]* 1.3 Write property tests for shared utilities
     - Create `tests/unit/test_customers_validation.py`
     - **Property 5: Invalid input is always rejected with field-level errors**
       - Use `@given` with Hypothesis strategies to generate invalid customer body dicts (missing required fields, name > 200 chars, non-RFC-5322 emails, invalid phone strings) — verify `validate_customer_body` returns non-empty dict with correct field keys
@@ -44,7 +44,7 @@ Implement a serverless customer management REST API on AWS using Python Lambda f
     - Read `COGNITO_USER_POOL_ID`, `COGNITO_REGION`, and `COGNITO_APP_CLIENT_ID` from environment variables
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5_
 
-  - [ ]* 2.2 Write property tests for the Lambda Authorizer
+  - [x]* 2.2 Write property tests for the Lambda Authorizer
     - Create `tests/unit/test_authorizer.py`
     - **Property 1: Valid JWTs are always permitted**
       - Use `@given` to generate valid JWT payloads with varying `sub`, custom claims, and realistic `exp` values, signed with the test key — verify `Effect: Allow` returned
@@ -59,7 +59,7 @@ Implement a serverless customer management REST API on AWS using Python Lambda f
 - [x] 3. Checkpoint — Ensure all unit tests pass so far
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 4. Implement the Customers Lambda — core CRUD handlers
+- [x] 4. Implement the Customers Lambda — core CRUD handlers
   - [x] 4.1 Implement `create_customer` handler in `src/customers/lambda_function.py`
     - Add copyright header and `lambda_handler` router that dispatches by `httpMethod` and `resource`
     - In `create_customer`: call `validate_customer_body`; on validation errors return 400 with `{"error": "Validation failed", "fields": {...}}`
@@ -70,7 +70,7 @@ Implement a serverless customer management REST API on AWS using Python Lambda f
     - On DynamoDB write error return 500 via `build_response` with sanitized message; do NOT include `customer_id` in 500 response
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6_
 
-  - [ ]* 4.2 Write property tests for `create_customer`
+  - [x]* 4.2 Write property tests for `create_customer`
     - In `tests/unit/test_customers_crud.py` (create file), mock DynamoDB with `moto`
     - **Property 3: Valid customer creation always succeeds with a UUID v4 ID**
       - `@given` valid customer create bodies (varying name, email, optional fields) — verify HTTP 201 and `is_valid_uuid4(response["customer_id"])` is `True`
@@ -87,7 +87,7 @@ Implement a serverless customer management REST API on AWS using Python Lambda f
     - `list_customers`: call `scan` with `Limit=100`; if `LastEvaluatedKey` present, base64-encode it and return as `nextToken` in response; decode inbound `nextToken` query param as `ExclusiveStartKey`; return 503 on DynamoDB error
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
 
-  - [ ]* 4.4 Write property tests for `get_customer`
+  - [x]* 4.4 Write property tests for `get_customer`
     - **Property 6: Create-then-retrieve round trip preserves all fields**
       - `@given` valid customer records — create then GET, verify all fields in create request appear unchanged in GET response, plus `customer_id` and `created_at`
       - **Validates: Requirements 3.1**
@@ -98,7 +98,7 @@ Implement a serverless customer management REST API on AWS using Python Lambda f
     - Add `# Feature: customer-management-platform` comment tags
     - _Requirements: 3.1, 3.2, 3.3, 3.5_
 
-  - [ ] 4.5 Implement `update_customer` handler
+  - [x] 4.5 Implement `update_customer` handler
     - Validate `customer_id` path param is UUID v4 (400 on failure)
     - Call `validate_customer_body` on request body; return 400 with field-level errors on failure
     - Check for duplicate email on `email-index` GSI for a different `customer_id`; return 409 on conflict
@@ -107,7 +107,7 @@ Implement a serverless customer management REST API on AWS using Python Lambda f
     - Return 200 with the full updated record including all server-generated fields
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6_
 
-  - [ ]* 4.6 Write property tests for `update_customer`
+  - [x]* 4.6 Write property tests for `update_customer`
     - **Property 8: Update preserves immutable fields**
       - `@given` valid existing customers plus valid update bodies (optionally including override attempts for `customer_id` and `created_at`) — verify response contains original `customer_id` and `created_at` unchanged; verify `updated_at` is valid ISO 8601 and `updated_at >= created_at`
       - **Validates: Requirements 4.5, 4.6**
@@ -122,7 +122,7 @@ Implement a serverless customer management REST API on AWS using Python Lambda f
     - Return 503 on DynamoDB error with sanitized message
     - _Requirements: 5.1, 5.2, 5.3, 5.4_
 
-  - [ ]* 4.8 Write property tests for `delete_customer`
+  - [x]* 4.8 Write property tests for `delete_customer`
     - **Property 9: DELETE removes the record and makes it unretrievable**
       - `@given` valid customer records — create, DELETE (verify 200 with confirmation message), GET (verify 404)
       - **Validates: Requirements 5.1**
@@ -132,7 +132,7 @@ Implement a serverless customer management REST API on AWS using Python Lambda f
     - Add `# Feature: customer-management-platform` comment tags
     - _Requirements: 5.1, 5.2, 5.3, 5.4_
 
-  - [ ]* 4.9 Write property test for sanitized error responses
+  - [x]* 4.9 Write property test for sanitized error responses
     - **Property 11: Responses never expose internal error details**
       - `@given` various error conditions (mocked DynamoDB `ClientError` on write, read, and delete paths; invalid inputs) — verify no response body `json.dumps` output contains substrings matching stack traces, ARNs (`arn:`), or DynamoDB error code patterns
       - **Validates: Requirements 7.4**
@@ -179,14 +179,14 @@ Implement a serverless customer management REST API on AWS using Python Lambda f
   - Run `terraform init` and `terraform validate` in `infra/`; ensure exit code 0 and zero error diagnostics.
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 8. Add integration tests and wire everything together
+- [x] 8. Add integration tests and wire everything together
   - [x] 8.1 Create `tests/unit/conftest.py` and install test dependencies
     - Add `pytest`, `hypothesis`, `moto[dynamodb]`, `pytest-mock` to `tests/` requirements or `pyproject.toml`
     - Add `conftest.py` with shared fixtures: mocked DynamoDB table, sample valid customer body, sample JWT event
     - Ensure existing `tests/unit/__init__.py` and `tests/integration/__init__.py` are in place
     - _Requirements: (testing infrastructure)_
 
-  - [ ] 8.2 Create `tests/integration/test_api_integration.py`
+  - [x] 8.2 Create `tests/integration/test_api_integration.py`
     - Write example-based integration tests (not property-based) for: unauthenticated request → 401; full CRUD lifecycle with a real JWT; HTTPS-only verification
     - Include a conditional test for CloudWatch access log entry presence (production environment only)
     - Tests should read `API_BASE_URL`, `COGNITO_TOKEN`, and `ENVIRONMENT` from environment variables

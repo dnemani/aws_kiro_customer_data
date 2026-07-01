@@ -210,32 +210,57 @@ def update_customer(event: dict) -> dict:
 
     # Preserve immutable fields regardless of body values
     original_created_at = existing_item["created_at"]
-
     now = _now_iso8601()
-    updated_item = {
-        "customer_id": customer_id,          # immutable
-        "name": body["name"],
-        "email": body["email"],
-        "created_at": original_created_at,   # immutable
-        "updated_at": now,
+
+    # Build UpdateExpression — always update mutable required fields and updated_at;
+    # set or remove optional fields based on whether they appear in the request body.
+    update_expr_parts = [
+        "SET #name = :name",
+        "email = :email",
+        "created_at = :created_at",
+        "updated_at = :updated_at",
+    ]
+    expr_names = {"#name": "name"}  # 'name' is a DynamoDB reserved word
+    expr_values = {
+        ":name": body["name"],
+        ":email": body["email"],
+        ":created_at": original_created_at,
+        ":updated_at": now,
     }
+
+    remove_parts = []
+
+    # Handle optional phone field: set if present in body, remove if absent
     if "phone" in body:
-        updated_item["phone"] = body["phone"]
+        update_expr_parts.append("phone = :phone")
+        expr_values[":phone"] = body["phone"]
     elif "phone" in existing_item:
-        # Clear phone if not in update body
-        updated_item["phone"] = existing_item["phone"]
+        remove_parts.append("phone")
 
+    # Handle optional address field: set if present in body, remove if absent
     if "address" in body:
-        updated_item["address"] = body["address"]
+        update_expr_parts.append("address = :address")
+        expr_values[":address"] = body["address"]
     elif "address" in existing_item:
-        updated_item["address"] = existing_item["address"]
+        remove_parts.append("address")
 
-    # Persist
+    update_expression = ", ".join(update_expr_parts)
+    if remove_parts:
+        update_expression += " REMOVE " + ", ".join(remove_parts)
+
+    # Persist via update_item (preserves customer_id and created_at regardless of body)
     try:
-        table.put_item(Item=updated_item)
+        result = table.update_item(
+            Key={"customer_id": customer_id},
+            UpdateExpression=update_expression,
+            ExpressionAttributeNames=expr_names,
+            ExpressionAttributeValues=expr_values,
+            ReturnValues="ALL_NEW",
+        )
     except ClientError:
         return build_response(500, {"error": "Internal server error"})
 
+    updated_item = result.get("Attributes", {})
     return build_response(200, updated_item)
 
 

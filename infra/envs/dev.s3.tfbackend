@@ -1,0 +1,5 @@
+bucket         = "customer-platform-tfstate-114943206720"
+key            = "customer-management-platform/dev/terraform.tfstate"
+region         = "us-east-1"
+dynamodb_table = "customer_records_tflock"
+encrypt        = true

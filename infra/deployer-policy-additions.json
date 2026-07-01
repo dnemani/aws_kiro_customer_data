@@ -1,0 +1,57 @@
+{
+  "Comment": "Statements to ADD to the customer-platform-deployer IAM policy so it can use the S3 + DynamoDB Terraform state backend. Merge these into the user's existing policy document (do not replace the existing DynamoDB/Lambda/etc statements).",
+  "Statement": [
+    {
+      "Sid": "TerraformStateS3",
+      "Effect": "Allow",
+      "Action": [
+        "s3:ListBucket",
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject"
+      ],
+      "Resource": [
+        "arn:aws:s3:::customer-platform-tfstate-114943206720",
+        "arn:aws:s3:::customer-platform-tfstate-114943206720/*"
+      ]
+    },
+    {
+      "Sid": "TerraformStateLock",
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:GetItem",
+        "dynamodb:PutItem",
+        "dynamodb:DeleteItem"
+      ],
+      "Resource": "arn:aws:dynamodb:us-east-1:114943206720:table/customer_records_tflock"
+    },
+    {
+      "Sid": "ApiGatewayAccessLogGroup",
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:DeleteLogGroup",
+        "logs:DescribeLogGroups",
+        "logs:PutRetentionPolicy",
+        "logs:TagResource",
+        "logs:UntagResource",
+        "logs:ListTagsForResource"
+      ],
+      "Resource": "arn:aws:logs:us-east-1:114943206720:log-group:/aws/apigateway/customer-management-*"
+    },
+    {
+      "Sid": "PassLambdaExecutionRoles",
+      "Effect": "Allow",
+      "Action": "iam:PassRole",
+      "Resource": [
+        "arn:aws:iam::114943206720:role/customers-lambda-role-dev",
+        "arn:aws:iam::114943206720:role/authorizer-lambda-role-dev",
+        "arn:aws:iam::114943206720:role/customers-lambda-role-prod",
+        "arn:aws:iam::114943206720:role/authorizer-lambda-role-prod"
+      ],
+      "Condition": {
+        "StringEquals": { "iam:PassedToService": "lambda.amazonaws.com" }
+      }
+    }
+  ]
+}

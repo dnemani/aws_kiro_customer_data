@@ -23,6 +23,11 @@ infra/.terraform.tfstate.lock.info
 .env
 *.pem
 *.key
+creds
+
+# Test caches
+.hypothesis/
+.pytest_cache/
 
 # macOS
 .DS_Store
