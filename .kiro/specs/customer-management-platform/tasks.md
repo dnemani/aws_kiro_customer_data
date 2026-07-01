@@ -4,6 +4,33 @@
 
 Implement a serverless customer management REST API on AWS using Python Lambda functions, API Gateway, DynamoDB, and Cognito — with all infrastructure defined in Terraform. The plan builds incrementally: shared utilities first, then the Lambda Authorizer, then the Customers CRUD Lambda, then infrastructure, and finally integration wiring and tests.
 
+## Deployment Status
+
+All implementation tasks (1–9) are complete, and the **dev environment is deployed** to
+AWS account `114943206720` (region `us-east-1`).
+
+**Remote state** (S3 + DynamoDB lock), provisioned via `scripts/bootstrap_backend.sh`:
+- Bucket: `customer-platform-tfstate-114943206720`
+- Lock table: `customer_records_tflock`
+- Init: `cd infra && terraform init -backend-config=envs/dev.s3.tfbackend`
+
+**Deployed dev resources** (`terraform apply -var-file=envs/dev.tfvars`; state clean, no drift):
+- API invoke URL: `https://v87sbmnj0b.execute-api.us-east-1.amazonaws.com/v1`
+- Cognito user pool: `us-east-1_GKF6gO5De`
+- Cognito app client: `6a8qqf8he5075bucjnb7uc47g2`
+- DynamoDB table: `customer_records_dev`
+
+**Notes for future work:**
+- Pre-existing dev resources were imported into state via `scripts/import_existing_dev.sh`
+  (idempotent). Any fresh account can skip this and just `apply`.
+- The API Gateway access-log group is now created **prod-only** (`count` in
+  `infra/api_gateway.tf`), since dev does not attach access logging.
+- **Prod is not yet deployed.** Prod deploy needs: `terraform init -backend-config=envs/prod.s3.tfbackend`,
+  then `apply -var-file=envs/prod.tfvars`. Because prod creates the CloudWatch log group,
+  the deployer IAM policy must grant `logs:DescribeLogGroups` on `Resource: "*"`
+  (wildcard-only action) — see `infra/deployer-policy.json`.
+- The IAM policy the deployer uses is version-controlled at `infra/deployer-policy.json`.
+
 ## Tasks
 
 - [x] 1. Set up project structure and shared utilities

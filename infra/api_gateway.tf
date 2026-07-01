@@ -153,9 +153,11 @@ resource "aws_api_gateway_deployment" "v1" {
   }
 }
 
-# CloudWatch log group for API Gateway access logs
-# Created unconditionally; only attached to the stage in production
+# CloudWatch log group for API Gateway access logs.
+# Access logging is enabled in production only (see the stage below), so the
+# log group is only created for prod.
 resource "aws_cloudwatch_log_group" "apigw_access_logs" {
+  count             = var.environment == "prod" ? 1 : 0
   name              = "/aws/apigateway/customer-management-${var.environment}"
   retention_in_days = 30
 }
@@ -172,7 +174,7 @@ resource "aws_api_gateway_stage" "v1" {
   dynamic "access_log_settings" {
     for_each = var.environment == "prod" ? [1] : []
     content {
-      destination_arn = aws_cloudwatch_log_group.apigw_access_logs.arn
+      destination_arn = aws_cloudwatch_log_group.apigw_access_logs[0].arn
       format = jsonencode({
         requestId    = "$context.requestId"
         httpMethod   = "$context.httpMethod"

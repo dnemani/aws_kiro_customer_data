@@ -56,17 +56,29 @@ internet
 
 ### Infrastructure Layout
 
-All AWS resources are declared in Terraform under `infra/`:
+All AWS resources are declared in Terraform under `infra/`, split one file per concern:
 
 | File | Purpose |
 |------|---------|
-| `main.tf` | All resource declarations (Lambda, API Gateway, Cognito, DynamoDB, IAM) |
+| `main.tf` | DynamoDB table (`customer_records`) |
+| `cognito.tf` | Cognito user pool + app client |
+| `iam.tf` | Lambda execution roles and least-privilege policies |
+| `lambda.tf` | Lambda functions, invoke permissions, `archive_file` zips |
+| `api_gateway.tf` | REST API, resources, methods, integrations, TOKEN authorizer, deployment, stage, access-log group |
+| `backend.tf` | S3 remote-state backend block (settings supplied via `-backend-config`) |
 | `variables.tf` | Input variable declarations |
-| `outputs.tf` | Output values (API URL, Cognito pool ID, etc.) |
+| `outputs.tf` | Output values (API URL, Cognito pool/client ID, table name) |
 | `providers.tf` | AWS provider configuration |
 | `versions.tf` | Pinned Terraform and provider versions |
-| `envs/dev.tfvars` | Dev-environment variable values |
-| `envs/prod.tfvars` | Prod-environment variable values |
+| `envs/dev.tfvars`, `envs/prod.tfvars` | Per-environment variable values |
+| `envs/dev.s3.tfbackend`, `envs/prod.s3.tfbackend` | Per-environment remote-state backend config |
+| `deployer-policy.json` | Full IAM policy attached to the `customer-platform-deployer` user |
+
+**Remote state**: Terraform state is stored in the S3 bucket
+`customer-platform-tfstate-114943206720` with locking via the DynamoDB table
+`customer_records_tflock`. The bucket and lock table are provisioned once by
+`scripts/bootstrap_backend.sh`. Initialize with
+`terraform init -backend-config=envs/<env>.s3.tfbackend`.
 
 ---
 
@@ -133,7 +145,7 @@ def lambda_handler(event: dict, context) -> dict:
 - **Resources**: `/customers` and `/customers/{customer_id}`.
 - **Endpoint type**: REGIONAL.
 - **Protocols**: HTTPS only (enforced by API Gateway — no HTTP fallback).
-- **Access logging** (production only): CloudWatch log group, format includes `$context.requestId`, `$context.httpMethod`, `$context.resourcePath`, `$context.status`, `$context.requestTime`.
+- **Access logging** (production only): the CloudWatch log group (`aws_cloudwatch_log_group.apigw_access_logs`) is created only when `environment == "prod"` (via `count`), and the stage's `access_log_settings` are likewise attached only in prod. Log format includes `$context.requestId`, `$context.httpMethod`, `$context.resourcePath`, `$context.status`, `$context.requestTime`. Note: `logs:DescribeLogGroups` is a wildcard-only IAM action, so the prod deploy requires that permission on `Resource: "*"`.
 
 ---
 
