@@ -3,11 +3,14 @@
 # ─────────────────────────────────────────────
 # Package source code into zip archives
 # ─────────────────────────────────────────────
+# The authorizer package includes vendored third-party dependencies
+# (python-jose + cryptography) that are NOT in the Lambda runtime. Those deps are
+# installed into build/authorizer by scripts/build_lambdas.sh, which MUST be run
+# before `terraform plan`/`apply`. This archive_file zips that prepared directory.
 data "archive_file" "authorizer_zip" {
   type        = "zip"
-  source_dir  = "${path.module}/../src/authorizer"
-  output_path = "${path.module}/../src/authorizer/lambda_authorizer.zip"
-  excludes    = ["lambda_authorizer.zip", "__pycache__", "requirements.txt"]
+  source_dir  = "${path.module}/../build/authorizer"
+  output_path = "${path.module}/../build/lambda_authorizer.zip"
 }
 
 data "archive_file" "customers_zip" {

@@ -64,6 +64,27 @@ def validate_token(token: str, issuer: str, audience: str) -> dict:
     return claims
 
 
+def _api_wildcard_resource(method_arn: str) -> str:
+    """Build an execute-api ARN scoped to the whole API stage.
+
+    API Gateway caches the authorizer's returned policy per identity token
+    (TTL). If we returned the concrete ``methodArn``, the cached Allow would only
+    cover the first route the caller happened to hit, and every other route would
+    then be denied (403) until the cache expired. Scoping the policy to all
+    methods and resources on the same API + stage avoids that.
+    """
+    # methodArn: arn:aws:execute-api:{region}:{account}:{apiId}/{stage}/{METHOD}/{path...}
+    parts = method_arn.split(":")
+    if len(parts) < 6:
+        return "*"
+    api_gateway_arn = parts[5].split("/")
+    if len(api_gateway_arn) < 2:
+        return method_arn
+    prefix = ":".join(parts[:5])
+    api_id, stage = api_gateway_arn[0], api_gateway_arn[1]
+    return f"{prefix}:{api_id}/{stage}/*"
+
+
 def build_policy(principal_id: str, effect: str, resource: str) -> dict:
     """Build an IAM policy document for API Gateway.
 
@@ -106,7 +127,7 @@ def lambda_handler(event: dict, context) -> dict:
             audience=COGNITO_APP_CLIENT_ID,
         )
         principal_id = claims.get("sub", "unknown")
-        resource = event.get("methodArn", "*")
+        resource = _api_wildcard_resource(event.get("methodArn", "*"))
         return build_policy(principal_id, "Allow", resource)
     except Exception:
         raise Exception("Unauthorized")

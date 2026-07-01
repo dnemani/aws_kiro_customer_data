@@ -46,6 +46,16 @@
 ./scripts/bootstrap_backend.sh
 ```
 
+### Build Lambda packages (REQUIRED before plan/apply)
+```
+./scripts/build_lambdas.sh
+```
+The authorizer Lambda depends on `python-jose` (not in the Lambda runtime), so its
+dependencies must be vendored into the package as Linux wheels. `archive_file`
+only zips source — it does not run `pip install` — so this build step must run
+before Terraform. The customers Lambda has no third-party deps and is packaged
+directly from source.
+
 ### Terraform Operations (per environment)
 ```
 cd infra

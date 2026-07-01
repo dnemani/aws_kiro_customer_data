@@ -93,10 +93,21 @@ All AWS resources are declared in Terraform under `infra/`, split one file per c
 - Fetch the Cognito User Pool's JWKS (cached for the Lambda container lifetime) to obtain the signing public key.
 - Validate the JWT: signature, `exp`, `iss` (must equal the Cognito issuer URL), and `aud` (must equal the App Client ID).
 - Return an IAM policy document:
-  - `Effect: Allow` on `arn:aws:execute-api:*:*:*` for a valid token.
+  - `Effect: Allow` for a valid token, scoped to the whole API stage
+    (`arn:aws:execute-api:{region}:{account}:{apiId}/{stage}/*`) rather than the
+    concrete `methodArn`. API Gateway caches the authorizer result per token
+    (TTL), so a policy scoped to a single method would cause every *other* route
+    to be denied (403) until the cache expired. Scoping to the whole stage
+    avoids this.
   - `Effect: Deny` (or raise `Unauthorized`) for any invalid token.
 
-**Key libraries**: `python-jose[cryptography]`, `boto3` (for SSM if needed), `datetime`.
+**Key libraries**: `python-jose[cryptography]`.
+
+**Packaging note**: `python-jose` (and its transitive `cryptography` dependency)
+are NOT part of the Lambda runtime and must be vendored into the deployment
+package as Linux wheels. `scripts/build_lambdas.sh` does this into
+`build/authorizer`, which Terraform then zips. This must run before
+`terraform plan`/`apply`. (The customers Lambda has no third-party deps.)
 
 **Interface**:
 ```python
