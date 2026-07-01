@@ -21,6 +21,10 @@ cd "$(dirname "$0")/../infra"
 
 VARS="-var-file=envs/dev.tfvars"
 imp() {
+  if terraform state list 2>/dev/null | grep -qx "$1"; then
+    echo "== already in state, skipping: $1"
+    return 0
+  fi
   echo "==> import $1"
   terraform import ${VARS} "$1" "$2"
 }

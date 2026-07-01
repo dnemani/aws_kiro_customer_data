@@ -1,5 +1,5 @@
 {
-  "Comment": "Statements to ADD to the customer-platform-deployer IAM policy so it can use the S3 + DynamoDB Terraform state backend. Merge these into the user's existing policy document (do not replace the existing DynamoDB/Lambda/etc statements).",
+  "Version": "2012-10-17",
   "Statement": [
     {
       "Sid": "TerraformStateS3",
@@ -52,6 +52,42 @@
       "Condition": {
         "StringEquals": { "iam:PassedToService": "lambda.amazonaws.com" }
       }
+    },
+    {
+      "Sid": "DynamoDBProviderReadExtras",
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:DescribeContinuousBackups",
+        "dynamodb:UpdateContinuousBackups",
+        "dynamodb:DescribeTableReplicaAutoScaling",
+        "dynamodb:UpdateTimeToLive"
+      ],
+      "Resource": "arn:aws:dynamodb:us-east-1:114943206720:table/customer_records*"
+    },
+    {
+      "Sid": "IAMRoleProviderReadExtras",
+      "Effect": "Allow",
+      "Action": [
+        "iam:GetRolePolicy",
+        "iam:ListRolePolicies",
+        "iam:ListAttachedRolePolicies",
+        "iam:ListInstanceProfilesForRole",
+        "iam:ListRoleTags"
+      ],
+      "Resource": [
+        "arn:aws:iam::114943206720:role/customers-lambda-role-dev",
+        "arn:aws:iam::114943206720:role/authorizer-lambda-role-dev",
+        "arn:aws:iam::114943206720:role/customers-lambda-role-prod",
+        "arn:aws:iam::114943206720:role/authorizer-lambda-role-prod"
+      ]
+    },
+    {
+      "Sid": "CognitoProviderReadExtras",
+      "Effect": "Allow",
+      "Action": [
+        "cognito-idp:GetUserPoolMfaConfig"
+      ],
+      "Resource": "arn:aws:cognito-idp:us-east-1:114943206720:userpool/*"
     }
   ]
 }
