@@ -11,7 +11,7 @@ validates Cognito-issued JWTs before any business logic runs.
 
 ## Architecture
 
-![Customer Management Platform architecture](./docs/customer-platform-architecture.png)
+![Customer Management Platform architecture](docs/customer-platform-architecture.png)
 
 The diagram above is a rendered image. The **editable, version-controlled**
 source is the Mermaid diagram below — adjust it here and it re-renders on GitHub:

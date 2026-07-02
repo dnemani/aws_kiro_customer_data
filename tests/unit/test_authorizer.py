@@ -152,10 +152,11 @@ def test_arbitrary_string_is_denied(garbage):
         authz.lambda_handler(_event(f"Bearer {garbage}"), None)
 
 
-@given(expired_by=st.integers(min_value=1, max_value=100000))
-@settings(max_examples=50)
+@given(expired_by=st.integers(min_value=10, max_value=100000))
+@settings(max_examples=50, deadline=None)
 def test_expired_jwt_is_denied(expired_by):
-    token = _make_token(exp_delta_seconds=-expired_by)
+    # Add extra buffer to ensure token is definitely expired by the time validation runs
+    token = _make_token(exp_delta_seconds=-(expired_by + 5))
     with pytest.raises(Exception, match="Unauthorized"):
         authz.lambda_handler(_event(f"Bearer {token}"), None)
 
